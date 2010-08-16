@@ -1,0 +1,5 @@
+PROJECT(hello)
+ADD_EXECUTABLE(hello hello.c)
+SET(CMAKE_C_COMPILER mpicc)
+SET(CMAKE_CXX_COMPILER mpicxx)
+target_link_libraries(mpi)
