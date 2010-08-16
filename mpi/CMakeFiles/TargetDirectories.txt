@@ -1,1 +1,0 @@
-/home/romanvg/uni/pdc/mpi/CMakeFiles/hello.dir
