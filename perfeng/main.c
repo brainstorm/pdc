@@ -15,24 +15,26 @@ double gettime(void)
 
 void fill_mat(double* m, int M, double val)
 {
-    for(int i=0; i<M; i++)
-	for(int j=0; j<M; j++)
+    int i, j;
+    for (i=0; i<M; i++)
+	for (j=0; j<M; j++)
 	    m[M*i + j] = val;
 }
 
-void mul(double* dest, const double* a, const double* b, int N){
-	for (int i=0; i<M; i++)
-		for (int j=0; j<M; j++){
+void mul(double* dest, const double* a, const double* b, int M){
+	int i, j, k, l;
+	for (i=0; i<M; i++)
+		for (j=0; j<M; j++){
 			double sum = 0.0;
-			for (int k=0; k<M; k++)
-				for (int l=0; l<M; l++)
-					sum += a[M*k + l] * b[M*l + k];
+			for (k=0; k<M; k++)
+				sum += a[M*i + k] * b[M*k + j];
 			dest[M*i + j] = sum;
 		}
 }
 
 int main(int args, char* argv[])
 {
+    int i, j;
     const int M = atoi(argv[1]);
 
     double* A = (double*) malloc(M*M*sizeof(double));
@@ -48,7 +50,11 @@ int main(int args, char* argv[])
     t = gettime()-t;
 
     printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
-
+/*
+    for (i=0; i<M; i++, printf("\n"))
+	for (j=0; j<M; j++, printf(" "))
+		printf("%lf", C[M*i + j]);
+*/
     free(A);
     free(B);
     free(C);
