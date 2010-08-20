@@ -1,7 +1,7 @@
-all: opt run 
+all: gnu run
 
 gnu:
-	gcc -O3 main.c -o gscale -lm
+	gcc -O3 main.c -o gscale -lm -DGNU
 nopt:
 	icc -O3 main.c -o scale_slow
 opt:
@@ -12,4 +12,4 @@ blas:
 	icc call_blas.c -I/pdc/vol/i-compilers/11.1/icc/mkl/include -L/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -Wl,--rpath,/pdc/vol/i-compilers/11.1/icc/mkl/lib/em64t -o call_blas
 
 run:
-	./scale 100
+	./gscale 100

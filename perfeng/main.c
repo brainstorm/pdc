@@ -8,6 +8,17 @@
 #define MUL_OUTPUT 0
 //TODO: sse
 
+//#ifdef GNU
+	#include <xmmintrin.h>
+//#else
+//Intel Compiler
+	#include <emmintrin.h>
+	#include <mmintrin.h>
+//#endif
+
+// example prototype for your matmul function
+void mul(double* dest, const double* a, const double* b, int N);
+
 inline double gettime(void) 
 {
     struct timeval tv;
@@ -34,6 +45,34 @@ inline void mul(double* dest, const double* a, const double* b, int M){
 			sum += a[M*i + k] * b[M*k + j];
 		    dest[M*i + j] += sum;
 		}
+}
+
+
+void mul_sse(double* dest, const double* a, const double* b, int M){
+	int i, j, k, l;
+
+	__m128d *ae, *be, *res;
+
+//	for (i=0; i<M; i++) {
+		ae = (__m128d*) &a[0];
+		be = (__m128d*) &b[0];
+		res = (__m128d*) &dest[0];
+
+		*res = __mm_mul_pd(*ae, *be);
+//__mm_malloc
+//	}
+
+//_mm_madd_epi16
+
+/*
+	for (i=0; i<M; i++)
+		for (j=0; j<M; j++){
+			double sum = 0.0;
+			for (k=0; k<M; k++)
+				sum += a[M*i + k] * b[M*k + j];
+			dest[M*i + j] = sum;
+		}
+*/
 }
 
 int main(int args, char* argv[])
