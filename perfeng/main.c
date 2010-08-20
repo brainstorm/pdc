@@ -20,6 +20,17 @@ void fill_mat(double* m, int M, double val)
 	    m[M*i + j] = val;
 }
 
+void mul(double* dest, const double* a, const double* b, int N){
+	for (int i=0; i<M; i++)
+		for (int j=0; j<M; j++){
+			double sum = 0.0;
+			for (int k=0; k<M; k++)
+				for (int l=0; l<M; l++)
+					sum += a[M*k + l] * b[M*l + k];
+			dest[M*i + j] = sum;
+		}
+}
+
 int main(int args, char* argv[])
 {
     const int M = atoi(argv[1]);
