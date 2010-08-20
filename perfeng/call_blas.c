@@ -3,6 +3,8 @@
 #include <sys/time.h>
 #include <math.h>
 #include "mkl_cblas.h"
+
+#define OUTPUT 0
 /*
 SUBROUTINE DGEMM(TRANSA,TRANSB,M,N,K,ALPHA,A,LDA,B,LDB,BETA,C,LDC)
       .. Scalar Arguments ..
@@ -62,10 +64,11 @@ int main(int args, char* argv[])
     t = gettime()-t;
 
     printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
+    if (OUTPUT) {
+	    for (i=0; i<M; i++, printf("\n"))
+		    for (j=0; j<M; j++, printf(" "))
 
-    for (i=0; i<M; i++, printf("\n"))
-	for (j=0; j<M; j++, printf(" "))
-		printf("%lf", C[M*i + j]);
+    }	printf("%lf", C[M*i + j]);
     
 free(A);
     free(B);

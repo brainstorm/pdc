@@ -3,17 +3,19 @@
 #include <sys/time.h>
 #include <math.h>
 
-// example prototype for your matmul function
-void mul(double* dest, const double* a, const double* b, int N);
+#define BLOCK 30 
+#define min(a, b) ((a < b) ? a : b)
+#define MUL_OUTPUT 0
+//TODO: sse
 
-double gettime(void) 
+inline double gettime(void) 
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return tv.tv_sec + 1e-6*tv.tv_usec;
 }
 
-void fill_mat(double* m, int M, double val)
+inline void fill_mat(double* m, int M, double val)
 {
     int i, j;
     for (i=0; i<M; i++)
@@ -21,14 +23,16 @@ void fill_mat(double* m, int M, double val)
 	    m[M*i + j] = val;
 }
 
-void mul(double* dest, const double* a, const double* b, int M){
-	int i, j, k, l;
-	for (i=0; i<M; i++)
-		for (j=0; j<M; j++){
-			double sum = 0.0;
-			for (k=0; k<M; k++)
-				sum += a[M*i + k] * b[M*k + j];
-			dest[M*i + j] = sum;
+inline void mul(double* dest, const double* a, const double* b, int M){
+    int i, j, k, jj, kk;
+    for (jj=0; jj<M; jj+=BLOCK) 
+	for (kk=0; kk<M; kk+=BLOCK)
+	    for (i=0; i<M; ++i)
+		for (j=jj; j<min(jj+BLOCK, M); ++j){
+		    double sum = 0.0;
+		    for (k=kk; k<min(kk+BLOCK, M); ++k)
+			sum += a[M*i + k] * b[M*k + j];
+		    dest[M*i + j] += sum;
 		}
 }
 
@@ -50,11 +54,11 @@ int main(int args, char* argv[])
     t = gettime()-t;
 
     printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
-/*
-    for (i=0; i<M; i++, printf("\n"))
-	for (j=0; j<M; j++, printf(" "))
+    if (MUL_OUTPUT) {    
+	for (i=0; i<M; i++, printf("\n"))
+	    for (j=0; j<M; j++, printf(" "))
 		printf("%lf", C[M*i + j]);
-*/
+    }
     free(A);
     free(B);
     free(C);
