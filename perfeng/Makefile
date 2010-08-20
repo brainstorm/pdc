@@ -1,7 +1,7 @@
-all: icc run
+all: gnu run
 
 gnu:
-	gcc -O3 main.c -o gscale -lm
+	gcc -O3 main.c -o gscale -lm -DGNU
 nopt:
 	icc -O3 main.c -o scale_slow
 opt:
@@ -10,4 +10,4 @@ prof:
 	icc -O3 -opt-report -fast main.c -o scale
 
 run:
-	./scale 100
+	./gscale 100

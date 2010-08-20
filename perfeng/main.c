@@ -3,6 +3,13 @@
 #include <sys/time.h>
 #include <math.h>
 
+#ifdef GNU
+	#include <xmmintrin.h>
+#else
+//Intel Compiler
+	#include <emmintrin.h>
+#endif
+
 // example prototype for your matmul function
 void mul(double* dest, const double* a, const double* b, int N);
 
@@ -30,6 +37,31 @@ void mul(double* dest, const double* a, const double* b, int M){
 				sum += a[M*i + k] * b[M*k + j];
 			dest[M*i + j] = sum;
 		}
+}
+
+
+void mul_sse(double* dest, const double* a, const double* b, int M){
+	int i, j, k, l;
+
+	__m128d *ae, *be, *res;
+
+	for (i=0; i<M; i++) {
+		ae = (_m128d*) &a[i];
+		be = (_m128d*) &b[i];
+		*res = _mm_mul_sd(ae, be);
+	}
+
+//_mm_madd_epi16
+
+/*
+	for (i=0; i<M; i++)
+		for (j=0; j<M; j++){
+			double sum = 0.0;
+			for (k=0; k<M; k++)
+				sum += a[M*i + k] * b[M*k + j];
+			dest[M*i + j] = sum;
+		}
+*/
 }
 
 int main(int args, char* argv[])
