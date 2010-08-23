@@ -13,8 +13,9 @@
 main(int argc, char **argv )
 {
   char message[20];
-  int i,rank, worker, size, type=99;
+  int i,rank, worker, size, type=99, type2=100;
   MPI_Status status;
+  MPI_Request request[20];
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -22,8 +23,11 @@ main(int argc, char **argv )
 
   if(rank == 0) {
     strcpy(message, "Hello, world");
-    for (i=1; i<size; i++) 
-      MPI_Send(message, 13, MPI_CHAR, i, type, MPI_COMM_WORLD);
+    for (i=1; i<size; i++)  {
+      MPI_Isend(message, 13, MPI_CHAR, i, type, MPI_COMM_WORLD, &request[i]);
+      MPI_Isend(message, 13, MPI_CHAR, i, type2, MPI_COMM_WORLD, &request[i]);
+    }
+
     printf("process %d : %.13s\n", rank, message);
     for (i=1; i<size; i++) {
       MPI_Recv(&worker, 1, MPI_INT,MPI_ANY_SOURCE,type, 
@@ -33,6 +37,7 @@ main(int argc, char **argv )
   } 
 
   else {
+    MPI_Recv(message, 20, MPI_CHAR, 0, type2, MPI_COMM_WORLD, &status);
     MPI_Recv(message, 20, MPI_CHAR, 0, type, MPI_COMM_WORLD, &status);
     MPI_Send(&rank, 1, MPI_INT, 0, type, MPI_COMM_WORLD);
   }
