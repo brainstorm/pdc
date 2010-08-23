@@ -9,7 +9,19 @@
 #define BLOCK2 128
 #define min(a, b) ((a < b) ? a : b)
 #define MUL_OUTPUT 0
-//TODO: sse, profile value of BLOCK (bruteforce) or maybe use cache line size somehow
+//TODO: sse, cache line size for BLOCK
+
+/*
+According to /proc/cpuinfo:
+(...)
+cache_alignment : 64
+
+Meaning: 64 *bytes* cache line
+
+It would be reasonable then to set BLOCK to 64 though
+
+*/
+
 
 //#ifdef GNU
 	#include <xmmintrin.h>
