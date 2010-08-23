@@ -1,0 +1,29 @@
+
+
+   ----- Exercise 1 ------
+
+  The check sum of the matrices evaluates to:
+Sum of matrix A    208706.3831116110    
+Sum of matrix B    208666.4699163127    
+Sum of matrix C    208686.0032522544    
+Time for the exercise:      33.7ms
+The variable x evaluates to      0.3235793122452080838868937    
+
+
+   ----- Exercise 2 ------
+
+  The check sum of the matrices evaluates to:
+Sum of matrix D    48388714.55865929    
+The value of scal is:       61.08579832563637523890065    
+Time for the exercise:     533.8ms
+
+
+   ----- Exercise 3 ------
+
+  The check sum of the matrices evaluates to:
+Sum of matrix D    48388714.55865929    
+The value of scal is:       61.08579832563637523890065    
+Time for the exercise:     477.2ms
+
+   ----- End of exercise 3 ------
+

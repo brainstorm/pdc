@@ -13,12 +13,18 @@ main(int argc, char **argv )
 
   if(rank == 0) {
     strcpy(message, "Hello, world");
-    for (i=1; i<size; i++) 
-      MPI_Send(message, 13, MPI_CHAR, i, type, MPI_COMM_WORLD);
+    int worker_rank;
+    for (i=1; i<size; i++)  {
+      MPI_Recv(&worker_rank, 1, MPI_INT, MPI_ANY_SOURCE, type, MPI_COMM_WORLD, &status);
+      printf("Message from process =%d : rank = %d\n", status.MPI_SOURCE, worker_rank);
+      //MPI_Send(message, 13, MPI_CHAR, i, type, MPI_COMM_WORLD);
+    }
   } 
-  else 
-    MPI_Recv(message, 20, MPI_CHAR, 0, type, MPI_COMM_WORLD, &status);
+  else  {
+    //MPI_Recv(message, 20, MPI_CHAR, 0, type, MPI_COMM_WORLD, &status);
+    MPI_Send(&rank, 1, MPI_INT, 0, type, MPI_COMM_WORLD);
+  }
 
-  printf( "Message from process =%d : %.13s\n", rank,message);
+  //printf( "Message from process =%d : %.13s\n", rank,message);
   MPI_Finalize();
 }
