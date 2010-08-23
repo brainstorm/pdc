@@ -1,6 +1,7 @@
 PROJECT(hello)
 ADD_EXECUTABLE(hello hello.c)
 ADD_EXECUTABLE(hello2 hello.ex1.c)
+ADD_EXECUTABLE(karp karp.c)
 SET(CMAKE_C_COMPILER mpicc)
 SET(CMAKE_CXX_COMPILER mpicxx)
 target_link_libraries(mpi)
