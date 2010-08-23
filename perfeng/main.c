@@ -3,8 +3,10 @@
 #include <sys/time.h>
 #include <math.h>
 #include <malloc.h>
+#include <omp.h>
 
-#define BLOCK 16
+#define BLOCK 512
+#define BLOCK2 128
 #define min(a, b) ((a < b) ? a : b)
 #define MUL_OUTPUT 0
 //TODO: sse, profile value of BLOCK (bruteforce) or maybe use cache line size somehow
@@ -73,47 +75,61 @@ inline void mul_trans(double* dest, const double* a, const double* b, int M){
 }
 
 
-void mul_sse(double* dest, const double* a, const double* b, int M){
-  int i, j, k, jj, kk;
+void mul_sse(double* restrict dest, const double* restrict a, const double* restrict b, int M){
+  int i0, i1, i, j0, j1, j, k0, k1, k;
   double dummy[2];
-  
   // Transposing matrix b
-  double* bT = (double*) _mm_malloc(M*M*sizeof(double), 16);
+  /*double* bT = (double*) _mm_malloc(M*M*sizeof(double), 16);
   for (i=0; i<M; ++i)
     for (j=0; j<M; ++j)
-      bT[M*i+j] = b[M*j+i];
+      bT[M*i+j] = b[M*j+i];*/
 
   __m128d ae, be, res, sum;
 
-  //sum = _mm_xor_pd(sum, sum);
-  for (jj=0; jj<M; jj+=BLOCK)
-    for (kk=0; kk<M; kk+=BLOCK)
-      for (i=0; i<M; ++i) {
-        for (j=jj; j<min(jj+BLOCK, M); ++j) {
-          res = _mm_setzero_pd();
-          for (k=kk; k<min(kk+BLOCK, M); k+=2){
-            sum = _mm_setzero_pd();
-            // Loading values into __m128d
-            ae = _mm_load_pd(&(a[M*i+k]));
-            be = _mm_load_pd(&(bT[M*j+k])); 
+#pragma omp parallel for default(none) shared(a, b, dest) private(i0, i1, i, j0, j1, j, k0, k1, k, M, sum, ae, be, res, dummy)
+  // First block
+  for (i0=0; i0<M; i0+=BLOCK) {
+    for (j0=0; j0<M; j0+=BLOCK) {
+      for (k0=0; k0<M; k0+=BLOCK) {
+        // Second block
+        for (i1=i0; i1<i0+BLOCK; i1+=BLOCK2) {
+          for (j1=j0; j1<j0+BLOCK; j1+=BLOCK2) {
+            for (k1=k0; k1<k0+BLOCK; k1+=BLOCK2) {
+              // Multiplication loop
+              for (i=i1; i<min(i1+BLOCK2, M); ++i) {
+                res = _mm_setzero_pd();
+                for (j=j1; j<min(j1+BLOCK2, M); j+=2){ 
+                  for (k=k1; k<min(k1+BLOCK2, M); k+=2) {
+                    sum = _mm_setzero_pd();
 
-            // Performing multiplication and add (sum += a * b)
-            sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
-            //_mm_store_pd(dummy, sum);
-            //printf("dummy: %lf %lf\n", dummy[0], dummy[0]);
+                    // Loading values into __m128d
+                    ae = _mm_load1_pd(&(a[M*i+k]));
+                    be = _mm_load_pd(&(b[M*k+j])); 
+
+                    // Performing multiplication and add (sum += a * b)
+                    sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
+
+                    //_mm_store_pd(dummy, sum);
+                    //printf("dummy: %lf %lf\n", dummy[0], dummy[0]);
+                  }
+                  // Add result
+                  res = _mm_load_pd(&(dest[M*i+j]));
+                  res = _mm_add_pd(res, sum);
+                  _mm_store_pd(&(dest[M*i+j]), res);
+                  
+                  //_mm_store_pd(dummy, sum);
+                  //printf("dummy: %lf %lf\n", dummy[0], dummy[1]);
+                  //printf("dest: %lf %lf\n", dest[0], dest[1]);
+                }
+              }
+            }
           }
-          //res = _mm_load_pd(&(dest[M*i+j]));
-          //res = _mm_add_pd(res, sum);
-          // Add result
-          //_mm_store_pd(&(dest[M*i+j]), res);
-          _mm_store_pd(dummy, sum);
-          dest[M*i+j] = dest[M*i+j] + dummy[0] + dummy[1];
-          //printf("dummy: %lf %lf\n", dummy[0], dummy[1]);
-          //printf("dest: %lf %lf\n", dest[0], dest[1]);
         }
       }
+    }
+  }
 
-  _mm_free(bT);    
+  //_mm_free(bT);    
 }
 
 int main(int args, char* argv[])
@@ -128,7 +144,7 @@ int main(int args, char* argv[])
   fill_mat(A,M,1.0);
   fill_mat(B,M,2.0);
   fill_mat(C,M,0.0);
-
+  
   double t = gettime();
   //mul(C,A,B,M);
   mul_sse(C,A,B,M);
