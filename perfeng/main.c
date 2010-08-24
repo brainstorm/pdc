@@ -5,13 +5,26 @@
 #include <malloc.h>
 #include <omp.h>
 
-#define BLOCK2 512
-#define BLOCK1 64
+// Bruteforcing...
+//#define BLOCK2 64
+//#define BLOCK1 64
+
 #define min(a, b) ((a < b) ? a : b)
 #define max(a, b) ((a > b) ? a : b)
 #define MUL_OUTPUT 0
 //TODO: sse, profile value of BLOCK2 (bruteforce) or maybe use cache line size somehow
 // omp inner loop ? profile where time is spent
+
+/*
+According to /proc/cpuinfo:
+(...)
+cache_alignment : 64
+
+Meaning: 64 *bytes* cache line
+
+It would be reasonable then to set BLOCK to 64 though
+
+*/
 
 //#ifdef GNU
 	#include <xmmintrin.h>
@@ -73,7 +86,8 @@ inline void mul_trans(double* dest, const double* a, const double* b, int M){
           dest[M*i + j] += sum;
         }
 
-  _mm_free(bT);      
+   //XXX
+  //_mm_free(bT);      
 }
 
 
