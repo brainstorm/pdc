@@ -80,48 +80,45 @@ inline void mul_trans(double* dest, const double* a, const double* b, int M){
 void mul_sse(double* restrict dest, const double* restrict a, const double* restrict b, int M){
   int i0, i1, i, j0, j1, j, k0, k1, k;
   double dummy[2];
-  // Transposing matrix b
-  /*double* bT = (double*) _mm_malloc(M*M*sizeof(double), 16);
-  for (i=0; i<M; ++i)
-    for (j=0; j<M; ++j)
-      bT[M*i+j] = b[M*j+i];*/
 
   __m128d ae, be, res, sum;
 
-  // First block
-#pragma omp parallel for default(none) ordered shared(a, b, dest, M) private(i0, i1, i, j0, j1, j, k0, k1, k, sum, ae, be, res, dummy) schedule(dynamic)
-  for (i0=0; i0<M; i0+=BLOCK2) {
-    for (j0=0; j0<M; j0+=BLOCK2) {
-      for (k0=0; k0<M; k0+=BLOCK2) {
-        // Second block
-        for (i1=i0; i1<min(i0+BLOCK2, M); i1+=BLOCK1) {
-          for (j1=j0; j1<min(j0+BLOCK2, M); j1+=BLOCK1) {
-            for (k1=k0; k1<min(k0+BLOCK2, M); k1+=BLOCK1) {
-              // Multiplication loop
-              for (i=i1; i<min(i1+BLOCK1, M); ++i) {
-                for (j=j1; j<min(j1+BLOCK1, M); j+=2){ 
-                  sum = _mm_setzero_pd();
-                  for (k=k1; k<min(k1+BLOCK1, M); ++k) {
+  if (M>(2*BLOCK2)) {
+#pragma omp parallel for default(none) shared(a, b, dest, M) private(i0, i1, i, j0, j1, j, k0, k1, k, sum, ae, be, res, dummy) schedule(dynamic)
+    // L2 block
+    for (i0=0; i0<M; i0+=BLOCK2) {
+      for (j0=0; j0<M; j0+=BLOCK2) {
+        for (k0=0; k0<M; k0+=BLOCK2) {
+          // L1 block
+          for (i1=i0; i1<min(i0+BLOCK2, M); i1+=BLOCK1) {
+            for (j1=j0; j1<min(j0+BLOCK2, M); j1+=BLOCK1) {
+              for (k1=k0; k1<min(k0+BLOCK2, M); k1+=BLOCK1) {
+                // Multiplication loop
+                for (i=i1; i<min(i1+BLOCK1, M); ++i) {
+                  for (j=j1; j<min(j1+BLOCK1, M); j+=2){ 
+                    sum = _mm_setzero_pd();
+                    for (k=k1; k<min(k1+BLOCK1, M); ++k) {
 
-                    // Loading values into __m128d
-                    ae = _mm_load1_pd(&(a[M*i+k]));
-                    be = _mm_load_pd(&(b[M*k+j])); 
+                      // Loading values into __m128d
+                      ae = _mm_load1_pd(&(a[M*i+k]));
+                      be = _mm_load_pd(&(b[M*k+j])); 
 
-                    // Performing multiplication and add (sum += a * b)
-                    sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
+                      // Performing multiplication and add (sum += a * b)
+                      sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
+
+                      //_mm_store_pd(dummy, sum);
+                      //printf("dummy: %lf %lf\n", dummy[0], dummy[0]);
+                    }
+                    //printf("dest: %lf %lf\n", dest[M*i+j], dest[M*i+j+1]);
+                    // Add result
+                    res = _mm_load_pd(&(dest[M*i+j]));
+                    res = _mm_add_pd(res, sum);
+                    _mm_store_pd(&(dest[M*i+j]), res);
 
                     //_mm_store_pd(dummy, sum);
-                    //printf("dummy: %lf %lf\n", dummy[0], dummy[0]);
+                    //printf("dummy: %lf %lf\n", dummy[0], dummy[1]);
+                    //printf("dest: %lf %lf\n", dest[0], dest[1]);
                   }
-                  //printf("dest: %lf %lf\n", dest[M*i+j], dest[M*i+j+1]);
-                  // Add result
-                  res = _mm_load_pd(&(dest[M*i+j]));
-                  res = _mm_add_pd(res, sum);
-                  _mm_store_pd(&(dest[M*i+j]), res);
-
-                  //_mm_store_pd(dummy, sum);
-                  //printf("dummy: %lf %lf\n", dummy[0], dummy[1]);
-                  //printf("dest: %lf %lf\n", dest[0], dest[1]);
                 }
               }
             }
@@ -130,8 +127,35 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
       }
     }
   }
+  else {
+    // L1 block
+    for (i1=0; i1<M; i1+=BLOCK1) {
+      for (j1=0; j1<M; j1+=BLOCK1) {
+        for (k1=0; k1<M; k1+=BLOCK1) {
+#pragma omp parallel for default(none) shared(a, b, dest, M) private(i1, i, j1, j, k1, k, sum, ae, be, res, dummy) schedule(dynamic)
+          // Multiplication loop
+          for (i=i1; i<min(i1+BLOCK1, M); ++i) {
+            for (j=j1; j<min(j1+BLOCK1, M); j+=2){ 
+              sum = _mm_setzero_pd();
+              for (k=k1; k<min(k1+BLOCK1, M); ++k) {
+                // Loading values into __m128d
+                ae = _mm_load1_pd(&(a[M*i+k]));
+                be = _mm_load_pd(&(b[M*k+j])); 
 
-  //_mm_free(bT);    
+                // Performing multiplication and add (sum += a * b)
+                sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
+              }
+              // Add result
+              res = _mm_load_pd(&(dest[M*i+j]));
+              res = _mm_add_pd(res, sum);
+              _mm_store_pd(&(dest[M*i+j]), res);
+            }
+          }
+        }
+      }
+    }
+  }
+
 }
 
 int main(int args, char* argv[])
