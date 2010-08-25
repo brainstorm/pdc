@@ -1,11 +1,11 @@
-all: gnu run
+all: opt
 
 gnu:
 	gcc -O3 -std=c99 main.c -o gscale -lm -DGNU
 nopt:
 	icc -O3 -std=c99 main.c -o scale_slow
 opt:
-	icc -O3 -std=c99 -openmp main.c -o scale
+	icc -O3 -std=c99 -fast -openmp -fno-alias -funroll-all-loops main.c -o matmul_romanvg_knyl
 prof:
 	icc -O3 -std=c99 -opt-report -openmp -fast main.c -o scale
 blas:

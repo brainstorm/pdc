@@ -9,7 +9,6 @@
 #include "mkl_cblas.h"
 #endif
 
-// Bruteforcing...
 #define BLOCK2 256
 #define BLOCK1 32
 #define IFSIZE 32
@@ -31,16 +30,9 @@ It would be reasonable then to set BLOCK to 64 though
 
 */
 
-//#ifdef GNU
-	#include <xmmintrin.h>
-//#else
-//Intel Compiler
-	#include <emmintrin.h>
-	#include <mmintrin.h>
-//#endif
-
-// example prototype for your matmul function
-void mul(double* dest, const double* a, const double* b, int N);
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#include <mmintrin.h>
 
 inline double gettime(void) 
 {
@@ -75,52 +67,12 @@ void mul_blas(double* c, double* a, double* b, int N){
 }
 #endif
 
-
-inline void mul(double* dest, const double* a, const double* b, int M){
-  int i, j, k, jj, kk;
-
-  for (jj=0; jj<M; jj+=BLOCK2) 
-    for (kk=0; kk<M; kk+=BLOCK2)
-      for (i=0; i<M; ++i)
-        for (j=jj; j<min(jj+BLOCK2, M); ++j){
-          double sum = 0.0;
-          for (k=kk; k<min(kk+BLOCK2, M); ++k)
-            sum += a[M*i + k] * b[M*k + j];
-          dest[M*i + j] += sum;
-        }
-}
-
-inline void mul_trans(double* dest, const double* a, const double* b, int M){
-  int i, j, k, jj, kk;
-  
-  // Transposing matrix b
-  double* bT = (double*) malloc(M*M*sizeof(double));
-  for (i=0; i<M; ++i)
-    for (j=0; j<M; ++j)
-      bT[M*i+j] = b[M*j+i];
-
-
-  for (jj=0; jj<M; jj+=BLOCK2) 
-    for (kk=0; kk<M; kk+=BLOCK2)
-      for (i=0; i<M; ++i)
-        for (j=jj; j<min(jj+BLOCK2, M); ++j){
-          double sum = 0.0;
-          for (k=kk; k<min(kk+BLOCK2, M); ++k)
-            sum += a[M*i + k] * bT[M*j + k];
-          dest[M*i + j] += sum;
-        }
-
-   //XXX
-  //_mm_free(bT);      
-}
-
-
 void mul_sse(double* restrict dest, const double* restrict a, const double* restrict b, int M){
   int i0, i1, i, j0, j1, j, k0, k1, k;
   double dummy[2];
 
   __m128d ae, be, res, sum, tmp;
-  __m128d ae1, be1, ae2, be2, ae3, be3;
+  __m128d be1, be2, be3;
   __m128d sum1, sum2, sum3;
   __m128d res1, res2, res3;
   if (M>(IFSIZE*BLOCK2)) {
@@ -141,7 +93,6 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
                     sum2 = _mm_setzero_pd();
                     sum3 = _mm_setzero_pd();
                     for (k=k1; k<min(k1+BLOCK1, M); ++k) {
-
                       // Loading values into __m128d
                       ae = _mm_load1_pd(&(a[M*i+k]));
 
@@ -156,12 +107,7 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
                       sum1 = _mm_add_pd(sum1, _mm_mul_pd(ae, be1)); 
                       sum2 = _mm_add_pd(sum2, _mm_mul_pd(ae, be2)); 
                       sum3 = _mm_add_pd(sum3, _mm_mul_pd(ae, be3)); 
-
-                      //_mm_store_pd(dummy, sum);
-                      //printf("dummy: %lf %lf\n", dummy[0], dummy[0]);
                     }
-                    //printf("dest: %lf %lf\n", dest[M*i+j], dest[M*i+j+1]);
-
                     // Add result
                     res = _mm_load_pd(&(dest[M*i+j]));
                     res1 = _mm_load_pd(&(dest[M*i+j+2]));
@@ -178,9 +124,6 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
                     _mm_store_pd(&(dest[M*i+j+4]), res2);
                     _mm_store_pd(&(dest[M*i+j+6]), res3);
 
-                    //_mm_store_pd(dummy, sum);
-                    //printf("dummy: %lf %lf\n", dummy[0], dummy[1]);
-                    //printf("dest: %lf %lf\n", dest[0], dest[1]);
                   }
                 }
               }
@@ -217,10 +160,6 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
                 sum1 = _mm_add_pd(sum1, _mm_mul_pd(ae, be1)); 
                 sum2 = _mm_add_pd(sum2, _mm_mul_pd(ae, be2)); 
                 sum3 = _mm_add_pd(sum3, _mm_mul_pd(ae, be3)); 
-
-                // Performing multiplication and add (sum += a * b)
-                //sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
-                //_mm_store_pd(dummy, sum);
               }
               // Add result
               res = _mm_load_pd(&(dest[M*i+j]));
