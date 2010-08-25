@@ -1,13 +1,13 @@
 #!/bin/sh
 
 module add summer/10
-OUTFILE="brute_if3.out"
-PROGRAMFILE="scale3"
+OUTFILE="brute_if0.out"
+PROGRAMFILE="scale0"
 
 ARY1="16 32 64 128"
 ARY2="128 256 512 1024 2048"
 SIZE="400 800 1200 1600 2400 3200 4800 9600"
-IFSIZE="2 4 6 8 16 32"
+IFSIZE="64"
 
 #for j in $ARY2
 #do

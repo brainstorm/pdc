@@ -5,11 +5,11 @@ BEGIN{first=0;ind=0;}
 }
 END{
   sum=0;
-  printf("blas = [\n");
+  printf("rollout = [\n");
   for (i=0; i<8; i++) {
     printf("%s\n", data[i]);
     sum+=data[i];
   }
   print "];"
-  printf("tot-blas = %s;\n\n", sum);
+  printf("tot-rollout = %s;\n\n", sum);
 }

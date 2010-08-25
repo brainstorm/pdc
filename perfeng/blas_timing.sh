@@ -1,7 +1,7 @@
 #!/bin/sh
 
 module add summer/10
-OUTFILE="brute_temp.out"
+OUTFILE="rollout3.out"
 PROGRAMFILE="scale"
 
 SIZE="400 800 1200 1600 2400 3200 4800 9600"

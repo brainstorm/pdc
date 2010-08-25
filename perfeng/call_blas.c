@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include "mkl_cblas.h"
+#include "mpi.h"
 
 #define OUTPUT 0
 /*
