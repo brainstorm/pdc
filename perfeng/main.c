@@ -5,13 +5,18 @@
 #include <malloc.h>
 #include <omp.h>
 
+#ifdef USE_BLAS
+#include "mkl_cblas.h"
+#endif
+
 // Bruteforcing...
-//#define BLOCK2 64
-//#define BLOCK1 64
+#define BLOCK2 256
+#define BLOCK1 32
+#define IFSIZE 2
 
 #define min(a, b) ((a < b) ? a : b)
 #define max(a, b) ((a > b) ? a : b)
-#define MUL_OUTPUT 0
+#define MUL_OUTPUT 1
 //TODO: sse, profile value of BLOCK2 (bruteforce) or maybe use cache line size somehow
 // omp inner loop ? profile where time is spent
 
@@ -48,9 +53,28 @@ inline void fill_mat(double* m, int M, double val)
 {
   int i, j;
   for (i=0; i<M; i++)
-    for (j=0; j<M; j++)
-      m[M*i + j] = val;
+    for (j=0; j<M; j++) 
+      m[M*i + j] = val*(rand()/(double)(RAND_MAX+1.0));
+      //m[M*i + j] = val*(rand()%10);
 }
+
+#ifdef USE_BLAS
+void mul_blas(double* c, double* a, double* b, int N){
+ /* parameters for C <- A*B, N-by-N */
+    const CBLAS_ORDER order = CblasRowMajor;
+    const CBLAS_TRANSPOSE transA = CblasNoTrans;
+    const CBLAS_TRANSPOSE transB = CblasNoTrans;
+    const double alpha = 1.0;
+    const double beta = 0.0;
+    const int lda = N;
+    const int ldb = N;
+    const int ldc = N;
+
+    cblas_dgemm(order, transA, transB, N, N, N, alpha,
+		a, lda, b, ldb, beta, c, ldc);
+}
+#endif
+
 
 inline void mul(double* dest, const double* a, const double* b, int M){
   int i, j, k, jj, kk;
@@ -95,9 +119,8 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
   int i0, i1, i, j0, j1, j, k0, k1, k;
   double dummy[2];
 
-  __m128d ae, be, res, sum;
-
-  if (M>(2*BLOCK2)) {
+  __m128d ae, be, res, sum, tmp;
+  if (M>(IFSIZE*BLOCK2)) {
 #pragma omp parallel for default(none) shared(a, b, dest, M) private(i0, i1, i, j0, j1, j, k0, k1, k, sum, ae, be, res, dummy) schedule(dynamic)
     // L2 block
     for (i0=0; i0<M; i0+=BLOCK2) {
@@ -155,9 +178,10 @@ void mul_sse(double* restrict dest, const double* restrict a, const double* rest
                 // Loading values into __m128d
                 ae = _mm_load1_pd(&(a[M*i+k]));
                 be = _mm_load_pd(&(b[M*k+j])); 
-
+                
                 // Performing multiplication and add (sum += a * b)
                 sum = _mm_add_pd(sum, _mm_mul_pd(ae, be)); 
+                _mm_store_pd(dummy, sum);
               }
               // Add result
               res = _mm_load_pd(&(dest[M*i+j]));
@@ -176,6 +200,7 @@ int main(int args, char* argv[])
 {
   int i, j;
   const int M = atoi(argv[1]);
+  srand(5);
 
   double* A = (double*) _mm_malloc(M*M*sizeof(double), 16);
   double* B = (double*) _mm_malloc(M*M*sizeof(double), 16);
@@ -185,27 +210,48 @@ int main(int args, char* argv[])
   fill_mat(B,M,2.0);
   fill_mat(C,M,0.0);
   
+#ifdef TEST_CORRECTNESS
+  printf("Matrix A\n");
+    for (i=0; i<M; i++, printf("\n"))
+      for (j=0; j<M; j++, printf(" "))
+        printf("%lf", A[M*i + j]);
+  
+  printf("Matrix B\n");
+    for (i=0; i<M; i++, printf("\n"))
+      for (j=0; j<M; j++, printf(" "))
+        printf("%lf", B[M*i + j]);
+#endif
+  
   double t = gettime();
   //mul(C,A,B,M);
   mul_sse(C,A,B,M);
   t = gettime()-t;
 
   printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
- /* 
-  fill_mat(C,M,0.0);
-  t = gettime();
-  mul_trans(C,A,B,M);
-  //mul_sse(C,A,B,M);
-  t = gettime()-t;
-
-  printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
-  */
   
-  if (MUL_OUTPUT) {    
+#ifdef TEST_CORRECTNESS
+  printf("SSE output\n");  
     for (i=0; i<M; i++, printf("\n"))
       for (j=0; j<M; j++, printf(" "))
         printf("%lf", C[M*i + j]);
-  }
+#endif        
+  
+#ifdef USE_BLAS
+  fill_mat(C,M,0.0);
+  t = gettime();
+  mul_blas(C,A,B,M);
+  t = gettime()-t;
+
+  printf("%d\t%f\t%E\n",M,t,2*pow(M,3)/t);
+  
+#ifdef TEST_CORRECTNESS
+  printf("BLAS output\n");
+    for (i=0; i<M; i++, printf("\n"))
+      for (j=0; j<M; j++, printf(" "))
+        printf("%lf", C[M*i + j]);
+#endif
+#endif  
+  
   _mm_free(A);
   _mm_free(B);
   _mm_free(C);

@@ -1,8 +1,8 @@
 #!/bin/sh
 
 module add summer/10
-OUTFILE="blas.out"
-PROGRAMFILE="call_blas"
+OUTFILE="brute_temp.out"
+PROGRAMFILE="scale"
 
 SIZE="400 800 1200 1600 2400 3200 4800 9600"
 for k in $SIZE
