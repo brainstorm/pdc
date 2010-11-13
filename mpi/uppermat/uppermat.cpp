@@ -5,15 +5,26 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <map>
+#include <utility>
+
 #include "mpi.h"
 
 #define N 4
 
 using namespace std;
 
+
+void show(multimap<int, int> hash)
+{
+  for (multimap<int, int>::iterator iter = hash.begin(); iter != hash.end(); ++iter) {
+	  cout << (*iter).first << ":" << (*iter).second << endl;
+  }
+}
+
 int main(int argc, char **argv) {
   int i,j;
-  vector<int> ary;
+  multimap<int, int> rowhash;
 
   int mat[N][N] = {{0, 2, 3, 2},
                    {0, 0, 1, 2},
@@ -28,15 +39,18 @@ int main(int argc, char **argv) {
   size = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();
 
+
   // Builds a vector with the upper matrix values, row-wise.
   // Does not include the matrix diagonal on the values.
   for (i=0; i<N-1; i++) {
 	  for (j=i+1; j<N; j++) {
-		  ary.push_back(mat[i][j]);
+		  rowhash.insert(pair<int, int>(i, mat[i][j]));
 	  }
   }
 
- 
+
+  show(rowhash);
+/* 
   if (rank == 0) { //Master
 	ary.resize(ary.size());
 	MPI::COMM_WORLD.Recv(&n, sizeof(int), MPI::INT, 1, 0);
@@ -44,16 +58,8 @@ int main(int argc, char **argv) {
 	for (i=1; i<ary.size(); i++)
 		MPI::COMM_WORLD.Send(&ary[0], i, MPI::INT, 0, 0);
   }
-
+*/
   MPI::Finalize();
   return 0;
 }
 
-/*
-void showVec(vector<int> vec)
-{
-  for (vector<int>::iterator iter = vec.begin(); iter != vec.end(); ++iter) {
-	  cout << *iter << endl;
-  }
-}
-*/
