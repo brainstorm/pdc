@@ -10,6 +10,8 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <string>
+#include <cstdlib>
 
 #include "mpi.h"
 
@@ -17,40 +19,8 @@
 
 using namespace std;
 
-
-void show(multimap<int, int> hash)
-{
-
-  multimap<int,int>::iterator it;
-  pair<multimap<int,int>::iterator, multimap<int,int>::iterator> ret;
-
-  cout << "Contents of multimap (unrolled):" << endl;
-  for (it = hash.begin(); it != hash.end(); ++it) {
-	  cout << (*it).first << ":" << (*it).second << endl;
-  }
-
-  cout << "mymm contains:" << endl;
-  for (int row=0; row < N; row++)
-  {
-    cout << row << " =>";
-    ret = hash.equal_range(row);
-    for (it=ret.first; it!=ret.second; ++it)
-      cout << " " << (*it).second;
-    cout << endl;
-  }
-}
-
 int main(int argc, char **argv) {
   int i,j;
-  multimap<int, int> rowhash;
-  multimap<int, int>::iterator it;
-  pair<multimap<int,int>::iterator, multimap<int,int>::iterator> ret;
-
-  int mat[N][N] = {{0, 1, 2, 3},
-                   {0, 0, 4, 5},
-                   {0, 0, 0, 6},
-                   {0, 0, 0, 0}};
-
 
   int n, rank, size, type = 99;
   MPI::Status status;
@@ -59,34 +29,104 @@ int main(int argc, char **argv) {
   size = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();
 
+  // Send buffer
+  char* buf;
+  // Distance buffer
+  double *receive_buf;
 
-  // Builds a vector with the upper matrix values, row-wise.
-  // Does not include the diagonal line.
-  for (i=0; i<N-1; i++) {
-	  for (j=i+1; j<N; j++) {
-		  rowhash.insert(pair<int, int>(i, mat[i][j]));
-	  }
-  }
+  // This is what we actually have to send
+  vector<string> sequences;
+  // Array to receive the distances in
+  double* distances;
+  
 
-  show(rowhash);
-/*
-  if (rank == 0) { //Master
-	// sends rows to workers (ranks) so that:
-	// rank = row = rowhash(key) ----> rowhash(values)
-	for (i = rank + 1; i <= n; i += size) {
-		  for (it = rowhash.begin(); it != rowhash.end(); ++it) {
-			  cout << "Sending rows to workers...: " << (*it).first << ":" << (*it).second << endl;
-		      MPI::COMM_WORLD.Send((*it).second, 1, MPI::INT, 0, 0);
-		  }
-	}
-	// receives results from workers
-	cout << n << endl;
-  } else { // XXX: Rank matches the key (row nr) from the multimap, so each worker processes one row
-	  MPI::COMM_WORLD.Reduce(&myrow, &n, rowhash.size, MPI::INT, MPI::SUM, 0);
-	  // Sends result of the row to the master
-	  MPI::COMM_WORLD.Send(&n, 1, MPI::INT, 0, 0);
+  if (rank == 0) { // Master
+  
+    for (int i=0; i<5; i++)
+      sequences.push_back("slkdfjassdflkajsdfaow");
+    
+    // Length of a null-terminated sequence
+    int seq_len = sequences[0].size()+1;
+    int nr_sequences = sequences.size();
+    int start_mess[2];
+    start_mess[0] = nr_sequences;
+    start_mess[1] = seq_len;
+    MPI::COMM_WORLD.Bcast(start_mess, 2, MPI_INT, 0);
+    
+    buf = (char*)malloc(seq_len*nr_sequences*sizeof(char));
+    
+    // Copy the sequences into the buffer
+    // XXX: Error prone!
+    for (int i=0; i<nr_sequences; i++)
+      strcpy(&buf[i*seq_len], sequences[i].c_str());
+    
+    // Broadcast all the sequences
+    MPI::COMM_WORLD.Bcast(buf, seq_len*nr_sequences, MPI_CHAR, 0);
+    
+    // Total number of distances
+    int total_nr_dists = (nr_sequences*nr_sequences-nr_sequences)/2;
+    // Number of distances to be calculated
+    int local_nr_dists = total_nr_dists/size;
+
+    // Calculate distances
+    // ...
+    int local_dist_vec[local_nr_dists];
+
+    // Dummy numbers..
+    for (int i=0; i<local_nr_dists; i++)
+      local_dist_vec[i] = rank*local_nr_dists+i;
+
+    // Collect distances from all processes
+    receive_buf = (double*)malloc(total_nr_dists*sizeof(double));
+		MPI::COMM_WORLD.Gather(local_dist_vec, local_nr_dists, MPI::DOUBLE, 
+                            receive_buf, local_nr_dists, MPI::DOUBLE, 0);
+
+    for (int i=0; i<total_nr_dists; i++)
+      cout << receive_buf[i] << " ";
+    cout << std::endl;
+  } 
+  else {  // Worker
+    int start_mess[2];
+    // Receive the number of sequences and the sequence length
+    MPI::COMM_WORLD.Bcast(start_mess, 2, MPI_INT, 0);
+    
+    int nr_sequences = start_mess[0];
+    // Remember: length of null-terminated sequences!
+    int seq_len = start_mess[1];
+
+    buf = (char*)malloc(seq_len*nr_sequences*sizeof(char));
+    
+    // Receive the actual sequences
+    MPI::COMM_WORLD.Bcast(buf, nr_sequences*seq_len, MPI::CHAR, 0);
+
+    // Copy data from buffer to vector
+    for (int i=0; i<nr_sequences; i++) 
+      sequences.push_back(&buf[i*seq_len]);
+	  
+    // Here it is assumed that the total number of distances is divisible by nr of processes
+    // This is normally not the case? But can be changed later
+    
+    // Number of distances calculated by this process
+    int local_nr_dists = (nr_sequences*nr_sequences-nr_sequences)/2;
+    
+    // Do calculations..
+
+    // Since this is process _rank_, it should calculate: 
+    // distance dist_vec[rank*(nr_distances/size)] to dist_vec[(rank+1)*(nr_distances/size)-1]
+    // What sequence pairs this corresponds to can be calculated,
+    //  and will be calculated later today
+
+    int local_dist_vec[local_nr_dists];
+
+    // Dummy numbers..
+    for (int i=0; i<local_nr_dists; i++)
+      local_dist_vec[i] = rank*local_nr_dists+i;
+    
+    
+    // The master process collects all the data  
+		MPI::COMM_WORLD.Gather(local_dist_vec, local_nr_dists, MPI::DOUBLE, 
+                            receive_buf, local_nr_dists, MPI::DOUBLE, 0);
   }
-*/
 
   MPI::Finalize();
   return 0;
