@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
   if (rank == 0) { // Master
   
-    for (int i=0; i<5; i++)
+    for (int i=0; i<8; i++)
       sequences.push_back("slkdfjassdflkajsdfaow");
     
     // Length of a null-terminated sequence
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 
     // Calculate distances
     // ...
-    int local_dist_vec[local_nr_dists];
+    double local_dist_vec[local_nr_dists];
 
     // Dummy numbers..
     for (int i=0; i<local_nr_dists; i++)
@@ -107,7 +107,8 @@ int main(int argc, char **argv) {
     // This is normally not the case? But can be changed later
     
     // Number of distances calculated by this process
-    int local_nr_dists = (nr_sequences*nr_sequences-nr_sequences)/2;
+    int total_nr_dists = (nr_sequences*nr_sequences-nr_sequences)/2;
+    int local_nr_dists = total_nr_dists/size;
     
     // Do calculations..
 
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
     // What sequence pairs this corresponds to can be calculated,
     //  and will be calculated later today
 
-    int local_dist_vec[local_nr_dists];
+    double local_dist_vec[local_nr_dists];
 
     // Dummy numbers..
     for (int i=0; i<local_nr_dists; i++)
@@ -125,7 +126,7 @@ int main(int argc, char **argv) {
     
     // The master process collects all the data  
 		MPI::COMM_WORLD.Gather(local_dist_vec, local_nr_dists, MPI::DOUBLE, 
-                            receive_buf, local_nr_dists, MPI::DOUBLE, 0);
+                            NULL, NULL, NULL, 0);
   }
 
   MPI::Finalize();
