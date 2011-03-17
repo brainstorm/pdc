@@ -1,0 +1,31 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name hadoop
+
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+set home /your/built/hadoop-$version
+
+if [module-info mode display] {
+	puts stderr "\tApache Hadoop MapReduce framework\n"
+}
+
+append-path PATH $home/bin
+
+## Although present on hadoop-env.sh, needed for hadoop friends to work with
+## the module system
+setenv HADOOP_HOME $home
+setenv HADOOP_CONF_DIR $home/conf
+
+#if {[file exist $home/bin ]} {
+#    append-path PATH $home/bin
+
+#} else {
+#    puts stderr "\n\tThere is no version of $name $version available.\n"
+#}
+
+module-whatis   "Apache Hadoop MapReduce framework"
+

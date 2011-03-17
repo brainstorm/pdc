@@ -1,0 +1,24 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name ant
+
+set home /your/built/apache-ant-$version
+
+if [module-info mode display] {
+	puts stderr "\tApache Ant, a Java-based build environment\n"
+}
+
+# prereqs YMMV
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+if {[file exist $home/bin ]} {
+    append-path PATH $home/bin
+    setenv ANT_HOME $home
+} else {
+    puts stderr "\n\tThere is no version of $name $version available.\n"
+}
+
+module-whatis   "Apache Ant build environment"

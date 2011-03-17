@@ -1,0 +1,30 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name flume 
+set home /your/built/flume-$version
+
+
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+if {! [ is-loaded hadoop ] } {
+        module load hadoop
+}
+
+if [module-info mode display] {
+	puts stderr "\tApache Hadoop Flume\n"
+}
+
+append-path PATH $home/bin
+
+if {[file exist $home/bin ]} {
+    append-path PATH $home/bin
+
+} else {
+    puts stderr "\n\tThere is no version of $name $version available.\n"
+}
+
+module-whatis   "Apache Hadoop Flume"
+

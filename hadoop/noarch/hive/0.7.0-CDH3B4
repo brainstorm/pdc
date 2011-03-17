@@ -1,0 +1,29 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name hive 
+set home /your/built/hive-$version
+
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+if {! [ is-loaded hadoop ] } {
+        module load hadoop
+}
+
+
+if [module-info mode display] {
+	puts stderr "\tApache Hadoop Hive\n"
+}
+
+append-path PATH $home/bin
+
+#if {[file exist $home/bin ]} {
+
+#} else {
+#    puts stderr "\n\tThere is no version of $name $version available.\n"
+#}
+
+module-whatis   "Apache Hadoop Hive"
+

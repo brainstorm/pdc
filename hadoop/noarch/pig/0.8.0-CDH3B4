@@ -1,0 +1,33 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name pig
+set home /afs/nada.kth.se/home/m/u1p3uptm/sbc/modules/$name-$version
+
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+if {! [ is-loaded hadoop ] } {
+        module load hadoop
+}
+
+if [module-info mode display] {
+	puts stderr "\tApache Hadoop Pig\n"
+}
+
+append-path PATH $home/bin
+setenv CLASSPATH $home/../hadoop/conf
+
+#if {[file exist $home/bin ]} {
+#    append-path PATH $home/bin
+#    setenv ANT_HOME $hadoophome
+#    setenv JAVA_HOME
+#    already defined by hadoop-env.sh
+
+#} else {
+#    puts stderr "\n\tThere is no version of $name $version available.\n"
+#}
+
+module-whatis   "Apache Hadoop Pig"
+

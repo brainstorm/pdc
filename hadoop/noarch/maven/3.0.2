@@ -1,0 +1,25 @@
+#%Module1.0
+
+set version [file tail [module-info name]]
+set name maven
+
+set home /your/built/$name-$version
+
+if [module-info mode display] {
+	puts stderr "\tApache Maven, an Apache build manager for Java projects\n"
+}
+
+# prereqs
+if {! [ is-loaded jsdk ] } {
+        module load jsdk
+}
+
+if {[file exist $home/bin ]} {
+    append-path PATH $home/bin
+    setenv M2_HOME $home
+} else {
+    puts stderr "\n\tThere is no version of $name $version available.\n"
+}
+
+module-whatis   "Apache build manager for Java projects"
+
